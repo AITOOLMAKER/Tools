@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image to Text Tool</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4895ef;
+      --secondary: #3f37c9;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4cc9f0;
+      --danger: #f72585;
+      --border-radius: 12px;
+      --box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7ff;
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: #6c757d;
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .upload-section {
+      text-align: center;
+      border: 2px dashed #ced4da;
+      padding: 3rem 2rem;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-section:hover {
+      border-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    .upload-section.active {
+      border-color: var(--success);
+      background-color: rgba(76, 201, 240, 0.05);
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+    }
+
+    .upload-text {
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      display: inline-block;
+      background-color: var(--primary);
+      color: white;
+      padding: 0.8rem 1.8rem;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:hover {
+      background-color: var(--secondary);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-secondary {
+      background-color: white;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #preview {
+      max-width: 100%;
+      max-height: 300px;
+      margin: 1rem auto;
+      display: block;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #output {
+      margin-top: 2rem;
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: var(--border-radius);
+      white-space: pre-wrap;
+      min-height: 150px;
+      border: 1px solid #e9ecef;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .output-container {
+      display: none;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      justify-content: center;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .progress-container {
+      width: 100%;
+      background-color: #e9ecef;
+      border-radius: 5px;
+      margin: 1rem 0;
+      height: 10px;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 5px;
+      background-color: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .status {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #6c757d;
+      margin-top: 0.5rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: #6c757d;
+      font-size: 0.9rem;
+      background-color: white;
+      border-top: 1px solid #e9ecef;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 1rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .card {
+        padding: 1.5rem;
+      }
+      
+      .upload-section {
+        padding: 2rem 1rem;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: var(--success);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Image to Text Converter</h1>
+      <p class="subtitle">Extract text from any image with OCR technology</p>
+    </header>
+
+    <div class="card">
+      <div class="upload-section" id="dropArea">
+        <div class="upload-icon">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <p class="upload-text">Drag & drop your image here or click to browse</p>
+        <label for="imageInput" class="btn">Choose Image</label>
+        <input type="file" id="imageInput" accept="image/*" />
+      </div>
+      
+      <img id="preview" style="display:none;">
+      
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Processing your image...</p>
+      </div>
+      
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status" id="statusText"></div>
+    </div>
+
+    <div class="card output-container" id="outputContainer">
+      <h2>Extracted Text</h2>
+      <div id="output"></div>
+      <div class="action-buttons">
+        <button class="btn" onclick="copyText()">
+          <i class="fas fa-copy"></i> Copy Text
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">
+          <i class="fas fa-redo"></i> Process Another
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Powered by Tesseract.js | Image to Text Converter © 2023</p>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const dropArea = document.getElementById('dropArea');
+    const preview = document.getElementById('preview');
+    const output = document.getElementById('output');
+    const outputContainer = document.getElementById('outputContainer');
+    const loading = document.querySelector('.loading');
+    const progressContainer = document.querySelector('.progress-container');
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    const toast = document.getElementById('toast');
+
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+      dropArea.classList.add('active');
+    }
+
+    function unhighlight() {
+      dropArea.classList.remove('active');
+    }
+
+    dropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        imageInput.files = files;
+        handleFiles(files);
+      }
+    }
+
+    imageInput.addEventListener('change', () => {
+      if (imageInput.files.length) {
+        handleFiles(imageInput.files);
+      }
+    });
+
+    function handleFiles(files) {
+      const file = files[0];
+      if (!file.type.match('image.*')) {
+        showToast('Please select an image file', 'error');
+        return;
+      }
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        processImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processImage(imageData) {
+      // Show loading state
+      loading.style.display = 'block';
+      progressContainer.style.display = 'block';
+      outputContainer.style.display = 'none';
+
+      try {
+        const result = await Tesseract.recognize(
+          imageData,
+          'eng',
+          {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                progressBar.style.width = `${Math.round(m.progress * 100)}%`;
+                statusText.textContent = `Progress: ${Math.round(m.progress * 100)}%`;
+              } else {
+                statusText.textContent = m.status;
+              }
+            }
+          }
+        );
+
+        // Display results
+        output.textContent = result.data.text;
+        loading.style.display = 'none';
+        progressContainer.style.display = 'none';
+        outputContainer.style.display = 'block';
+        
+        // Scroll to results
+        outputContainer.scrollIntoView({ behavior: 'smooth' });
+        
+      } catch (err) {
+        console.error(err);
+        loading.style.display = 'none';
+        showToast('Error processing image. Please try another.', 'error');
+      }
+    }
+
+    function copyText() {
+      const text = output.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Text copied to clipboard!');
+      });
+    }
+
+    function clearAll() {
+      imageInput.value = '';
+      preview.src = '';
+      preview.style.display = 'none';
+      output.textContent = '';
+      outputContainer.style.display = 'none';
+      progressBar.style.width = '0%';
+      statusText.textContent = '';
+    }
+
+    function showToast(message, type = 'success') {
+      toast.textContent = message;
+      toast.style.backgroundColor = type === 'error' ? 'var(--danger)' : 'var(--success)';
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
