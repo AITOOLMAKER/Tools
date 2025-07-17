@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Resizer Tool</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #f8f9fa;
+      --text: #2b2d42;
+      --light-text: #8d99ae;
+      --border: #e9ecef;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f1f5fe;
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      background-color: var(--secondary);
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    .upload-area.highlight {
+      border-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.1);
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-text {
+      color: var(--light-text);
+      margin-bottom: 0.5rem;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .dimensions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .dimension-group {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border 0.3s ease;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    button:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .preview-container {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+
+    canvas {
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-top: 1rem;
+      display: none;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 1.5rem;
+      text-align: center;
+      color: var(--primary);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    #downloadLink:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+
+    .file-info {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--light-text);
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+
+      .dimensions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Image Resizer</h1>
+    
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">Click to upload an image</div>
+      <div class="file-info" id="fileInfo"></div>
+      <input type="file" id="fileInput" accept="image/*" />
+    </div>
+    
+    <div class="dimensions">
+      <div class="dimension-group">
+        <label for="width">Width (px)</label>
+        <input type="number" id="width" placeholder="Enter width" min="1" />
+      </div>
+      <div class="dimension-group">
+        <label for="height">Height (px)</label>
+        <input type="number" id="height" placeholder="Enter height" min="1" />
+      </div>
+    </div>
+    
+    <button onclick="resizeImage()">
+      <span>Resize Image</span>
+      <span>↻</span>
+    </button>
+    
+    <div class="preview-container">
+      <canvas id="canvas"></canvas>
+      <a id="downloadLink" download="resized-image.png">Download Resized Image</a>
+    </div>
+  </div>
+
+  <script>
+    let originalImage = new Image();
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const canvas = document.getElementById('canvas');
+    const downloadLink = document.getElementById('downloadLink');
+
+    // Upload area click handler
+    uploadArea.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // Drag and drop handlers
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('highlight');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('highlight');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('highlight');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        handleFileUpload(this.files[0]);
+      }
+    });
+
+    function handleFileUpload(file) {
+      // Display file info
+      fileInfo.textContent = `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        originalImage.src = e.target.result;
+        originalImage.onload = function() {
+          // Set default dimensions to original image size
+          document.getElementById('width').value = originalImage.width;
+          document.getElementById('height').value = originalImage.height;
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resizeImage() {
+      const width = parseInt(document.getElementById('width').value);
+      const height = parseInt(document.getElementById('height').value);
+      const ctx = canvas.getContext('2d');
+
+      if (!width || !height || isNaN(width) || isNaN(height)) {
+        alert("Please enter valid width and height.");
+        return;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(originalImage, 0, 0, width, height);
+
+      // Show canvas and download link
+      canvas.style.display = 'block';
+      downloadLink.href = canvas.toDataURL('image/png');
+      downloadLink.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
